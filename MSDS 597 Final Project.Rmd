@@ -1,0 +1,282 @@
+---
+title: "MSDS 597 Final Project"
+author: "Jongsoo Han and Heon Park"
+date: '2022-05-04'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# MSDS 597 Final Project
+
+# Analysis of Data Science Career
+
+
+# Introduction
+
+With the increased demand on career opportunity for Data Scientist, we would explore this dataset in order to provide the readers with the understanding/overview of the data science career market.
+
+# Dataset
+
+The dataset is available at Kaggle, and this dataset was extracted by scrapping the job postings related to the position of 'Data Scientist' from www.glassdoor.com.
+
+Reading the dataset
+
+```{r}
+library(tidyverse)
+
+df = read.csv(file="data_cleaned_2021.csv", header=TRUE)
+df = as.tibble(df)
+head(df)
+```
+
+Checking there are Null/NA value in the dataset
+
+```{r}
+sum(is.null(df))
+```
+# Exploratory Data Analysis
+
+1. Summary of the dataset
+
+```{r}
+df_summary = df %>% select(Job.Title, Company.Name, Location, Size, Industry,
+                            Lower.Salary, Upper.Salary, Avg.Salary.K., Job.Location)
+
+df_summary$Job.Title = as.factor(df_summary$Job.Title)
+df_summary$Company.Name = as.factor(df_summary$Company.Name)
+df_summary$Location = as.factor(df_summary$Location)
+df_summary$Size = as.factor(df_summary$Size)
+df_summary$Industry  = as.factor(df_summary$Industry )
+df_summary$Job.Location  = as.factor(df_summary$Job.Location)
+
+summary(df_summary)
+```
+
+-There 742 job postings related to Data Science.
+
+-Average Salary is $101.5K.
+
+2. States with Most Number of Job
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+df %>% count(Job.Location)%>% summarise(Total_State=n())
+
+df_state = df %>% select(Job.Location) %>%
+  group_by(Job.Location) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))%>%
+  head(10)
+
+df_state
+
+df_state %>%
+  ggplot(aes(reorder(Job.Location, -count), count, fill=Job.Location)) + 
+  geom_bar(stat="identity") +
+  geom_text(aes(label = percent(count/sum(count)))) +
+  ggtitle("States with Most Number of Jobs") +
+  xlab("Job Location") +
+  ylab("Job Count") 
+```
+
+-The Data shows California has the most number of jobs.
+
+-Evidently, California to has the most number of jobs as it is a hub for Tech. companies and has  silicon valley.
+
+-California, Massachusetts, New York, Virginia together has around 50% jobs.
+
+-Interesting fact is that despite having the largest number of Fortune 500 companies HQ in New York, it is still on 3rd position.
+
+
+3. Median Salary in Different States
+
+New Section: We added following section (2.5) having been suggested by the professor during the presentation.
+
+```{r}
+df_Salary_med = df %>% select(Job.Location, Avg.Salary.K.)
+
+df_Salary_med = df_Salary_med %>% 
+  group_by(Job.Location) %>% 
+  summarise(MedSalary = median(Avg.Salary.K.)) %>%
+  arrange(desc(MedSalary)) %>%
+  head(10)
+
+df_Salary_med %>%
+  ggplot(aes(reorder(Job.Location, -MedSalary), MedSalary, fill=Job.Location)) + 
+  geom_bar(stat="identity") +
+  ggtitle("New: Median Salary for Different State") +
+  theme(plot.title = element_text(color = "Red")) +
+  geom_text(aes(label = MedSalary), vjust = 1.5, colour = "Red") +
+  xlab("Job Location") +
+  ylab("Median Salary (K)")
+```
+-The Data shows California has the highest Median Salary.
+
+-IL and MA have the second and third highest Median Salary. 
+
+4. Average Salary in Different States
+
+```{r}
+df_avg_state = df %>% select(Job.Location, Avg.Salary.K.)
+
+df_avg_state = df_avg_state %>% 
+  group_by(Job.Location) %>% 
+  summarise(AvgSalary = mean(Avg.Salary.K.)) %>%
+  arrange(desc(AvgSalary)) %>%
+  head(10)
+
+df_avg_state %>%
+  ggplot(aes(reorder(Job.Location, -AvgSalary), AvgSalary, fill=Job.Location)) + 
+  geom_bar(stat="identity") +
+  ggtitle("Average Salary for Different State") +
+  xlab("Job Location") +
+  ylab("Average Salary (K)")
+```
+
+-The graph shows average annual salary for different states.
+
+-State with highest number of job, California also offers the highest average annual salary, followed by Illinois.
+
+-Maryland has the lowest average annual salary.
+
+-It is interesting to find that NJ has higher average salary than that of NY. (NJ: 5th & NY: 8th)
+
+5. Average Minimal and Maximal Salaries in Different State
+
+```{r}
+df_avg_min_max = df %>% select(Job.Location, Lower.Salary, Upper.Salary)
+
+df_avg_min_max = df_avg_min_max %>% 
+  group_by(Job.Location) %>% 
+  summarise(LowSalary = mean(Lower.Salary), UpSalary = mean(Upper.Salary))
+
+df_avg_min_max = df_avg_min_max %>% 
+  inner_join(df_state) %>% 
+  arrange(desc(count))
+
+df_avg_min_max
+
+df_avg_min_max %>%
+  ggplot(aes(reorder(Job.Location, -LowSalary), LowSalary)) + 
+  geom_bar(stat="identity", color='skyblue', fill='steelblue') +
+  ggtitle("States with Average Annual Minimal Salaries") +
+  xlab("Job Location") +
+  ylab("Lower Salary (K)") 
+
+df_avg_min_max %>%
+  ggplot(aes(reorder(Job.Location, -UpSalary), UpSalary)) + 
+  geom_bar(stat="identity", color='yellow', fill='orange') +
+  ggtitle("States with Average Annual Maximal Salaries") +
+  xlab("Job Location") +
+  ylab("Upper Salary (K)")
+```
+
+-State with highest number of job, California also offers the highest average maximal annual salary, followed by Illinois.
+
+-Washington has the lowest average maximum annual salary among the top 10 states.
+
+-We find that both California and Illinois has almost the same average minimal annual salary.
+
+-We find that Pennsylvania has the lowest average minimum annual salary among the top 10 states.
+
+6. Top 5 Industries with Maximum Number of Data Science Related Job Postings
+
+```{r}
+df %>% count(Industry)%>% summarise(Total_Industry=n())
+
+df_top5 = df %>% select(Industry) %>%
+  group_by(Industry) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))%>%
+  head(5)
+
+df_top5
+
+df_top5 %>%
+  ggplot(aes("", count, fill=Industry)) + 
+  geom_bar(stat="identity", width=1) + 
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = percent(count/sum(count))), position = position_stack(vjust=0.5)) + 
+  ggtitle("Top 5 Industries with Data Science Related Job Postings") +
+  xlab("Industry") +
+  ylab("Job Count") 
+```
+
+-Biotech & Pharmaceuticals Industry has maximum number of jobs followed by Insurance carriers.
+
+-IT industry has fewer jobs for data science related roles.
+
+-More than 65% data science related jobs lie in top 10 industries.
+
+-For this dataset, Biotech & Pharmaceuticals Industry has twice the amount of jobs compared to IT services industry.
+
+7. Companies with Maximum Number of Job Openings
+
+```{r}
+df %>% count(company_txt)%>% summarise(Total_Company=n())
+
+df_company = df %>% select(company_txt) %>%
+  group_by(company_txt) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))%>%
+  head(10)
+
+df_company
+
+df_company %>%
+  ggplot(aes(reorder(company_txt, -count), count)) + 
+  geom_bar(stat="identity", color='skyblue', fill='steelblue') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  ggtitle("Top 10 Comanpanies with Number of Job Postings") +
+  xlab("Company Name") +
+  ylab("Count")
+```
+
+-There are total 342 companies in the dataset. This is why there is less number of job postings by each company.
+
+-Reynolds American, MassMutrual and Takeda Pharmaceuticals company tops the list with 14 job postings related to data science.
+
+-We find that a Pharmaceutical Industry is leading with the most number of job postings, we see the same trend here as well
+
+8. Relation between Average Salary and Education
+
+```{r}
+df_education = df %>% select(job_title_sim, Avg.Salary.K., Degree) 
+
+df_education %>% 
+  group_by(Degree) %>% 
+  summarise(AvgSalary = mean(Avg.Salary.K.))
+
+df_education %>%
+  ggplot(aes(Degree, Avg.Salary.K.)) +
+  geom_boxplot() +
+  ggtitle("Relation between Average Salary and Education") +
+  xlab("Degree - M: Master, na: na, P: phD") +
+  ylab("Salary")
+```
+
+-Most of the companies has mentioned Masters degree in their job descriptions.
+
+-For companies that mentioned a PhD degree in their job description, they offered much highest average annual salary as compared to Masters.
+
+# Summary
+
+-We were able to find many interesting results from this analysis such as which state’s average salary is highest and lowest, and also which industry have most job posting related to Data Science. 
+
+-One interesting issue that was quite surprising is that we found no correlation between company size/revenue and salary. It seems that salary is more correlated to a specific geography and degree.
+
+-Having conducted this analytical review of the datasets from Glassdoor, we were able to examine one of the most importing decisioning factor in job requisitions which is the salary. 
+
+-We also could correlate this analysis to  the expectations of the company from a data science employee. 
+
+-As prospective candidates in Data Science industry, This project exercise has helped us to gain understanding around the various components in the current job market.
+
+
+
+
